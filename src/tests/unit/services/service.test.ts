@@ -2,6 +2,7 @@
 import CarModel from '../../../models/CarModel';
 import CarService from '../../../services/Car';
 import { ZodError } from 'zod';
+import { ErrorTypes } from '../../../erros/catalog';
 import * as sinon from 'sinon';
 import chai from 'chai';
 import { carMock, carMockWithId } from '../../mocks/carMock';
@@ -13,6 +14,10 @@ describe('Car service', () => {
 
   before(async () => {
     sinon.stub(carModel, 'create').resolves(carMockWithId);
+		sinon.stub(carModel, 'read').resolves([carMockWithId]);
+		sinon.stub(carModel, 'readOne')
+			.onCall(0).resolves(carMockWithId)
+			.onCall(1).resolves(null);
   });
 
   after(()=>{
@@ -31,6 +36,38 @@ describe('Car service', () => {
 				await carService.create({} as any);
 			} catch (error) {
 				expect(error).to.be.instanceOf(ZodError);
+			}
+		});
+	});
+
+	describe('listando todos os carros', () => {
+		it('quando listado com sucesso', async () => {
+			const listCar = await carService.read();
+
+			expect(listCar).to.be.deep.equal([carMockWithId]);
+		});
+
+		it('quando não for possível listar', async () => {
+			try {
+				await carService.read();
+			} catch (error: any) {
+				expect(error.message).to.be.deep.equal(ErrorTypes.EntityNotFound);
+			}
+		});
+	});
+
+	describe('buscando carro pelo Id', () => {
+		it('quando encontrado com sucesso', async () => {
+			const carId = await carService.readOne(carMockWithId._id);
+
+			expect(carId).to.be.deep.equal(carMockWithId);
+		});
+
+		it('quando o Id não for encontrado', async () => {
+			try {
+				await carService.readOne(carMockWithId._id);
+			} catch (error: any) {
+				expect(error.message).to.be.deep.equal(ErrorTypes.EntityNotFound);
 			}
 		});
 	});
