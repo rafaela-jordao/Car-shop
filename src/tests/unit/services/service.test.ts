@@ -5,7 +5,8 @@ import { ZodError } from 'zod';
 import { ErrorTypes } from '../../../erros/catalog';
 import * as sinon from 'sinon';
 import chai from 'chai';
-import { carMock, carMockWithId } from '../../mocks/carMock';
+import { carMock, carMockWithId, carMockForChangeWithId,
+	carMockForChange, carMockInvalid } from '../../mocks/carMock';
 const { expect } = chai;
 
 describe('Car service', () => {
@@ -18,6 +19,7 @@ describe('Car service', () => {
 		sinon.stub(carModel, 'readOne')
 			.onCall(0).resolves(carMockWithId)
 			.onCall(1).resolves(null);
+		sinon.stub(carModel, 'update').resolves(carMockForChangeWithId);
   });
 
   after(()=>{
@@ -68,6 +70,22 @@ describe('Car service', () => {
 				await carService.readOne(carMockWithId._id);
 			} catch (error: any) {
 				expect(error.message).to.be.deep.equal(ErrorTypes.EntityNotFound);
+			}
+		});
+	});
+
+	describe('atualizando carro', () => {
+		it('quando atualizado com sucesso', async () => {
+			const carUpdated = await carService.update('4edd40c86762e0fb12000003', carMockForChange);
+			expect(carUpdated).to.be.deep.equal(carMockForChangeWithId);
+		});
+
+		it('quando body for inválido', async () => {
+			try {
+				await carService.update('4edd40c86762e0fb12000003', carMockInvalid);
+				expect(true).to.be.false;
+			} catch (error: any) {
+				expect(error).to.be.instanceOf(ZodError);
 			}
 		});
 	});

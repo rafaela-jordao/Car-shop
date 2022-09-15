@@ -4,7 +4,8 @@ import { Model } from 'mongoose';
 import { ErrorTypes } from '../../../erros/catalog';
 import * as sinon from 'sinon';
 import chai from 'chai';
-import { carMock, carMockWithId } from '../../mocks/carMock';
+import { carMock, carMockWithId, carMockForChange,
+	carMockForChangeWithId } from '../../mocks/carMock';
 const { expect } = chai;
 
 describe('Car model', () => {
@@ -14,6 +15,7 @@ describe('Car model', () => {
     sinon.stub(Model, 'create').resolves(carMockWithId);
     sinon.stub(Model, 'find').resolves([carMockWithId]);
     sinon.stub(Model, 'findOne').resolves(carMockWithId);
+		sinon.stub(Model, 'findByIdAndUpdate').resolves(carMockForChangeWithId);
   });
 
   after(()=>{
@@ -44,6 +46,21 @@ describe('Car model', () => {
 			try {
 				await carModel.readOne('123ERRADO');
 			} catch (error: any) {
+				expect(error.message).to.be.eq(ErrorTypes.InvalidMongoId);
+			}
+		});
+	});
+
+	describe('atualizando carro', () => {
+		it('quando atualizado com sucesso', async () => {
+			const carChanged = await carModel.update('4edd40c86762e0fb12000003', carMockForChange);
+			expect(carChanged).to.be.deep.equal(carMockForChangeWithId);
+		});
+	
+		it('quando o Id não for encontrado para alterar', async () => {
+			try {
+				await carModel.update('123ERRADO', carMockForChange);
+			} catch (error:any) {
 				expect(error.message).to.be.eq(ErrorTypes.InvalidMongoId);
 			}
 		});
